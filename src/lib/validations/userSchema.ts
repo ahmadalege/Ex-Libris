@@ -11,9 +11,6 @@ export const registerSchema = z
       .regex(/[a-z]/, "Must include a lowercase letter")
       .regex(/[0-9]/, "Must include a number"),
     confirmPassword: z.string(),
-    termsAccepted: z.literal(true, {
-      message: "You must accept terms and conditions.",
-    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
