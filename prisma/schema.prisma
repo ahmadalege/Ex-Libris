@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SwapStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum BookCondition {
+  NEW
+  LIKE_NEW
+  USED
+  DAMAGED
+}
+
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  username          String        @unique
+  password          String
+  books             Book[]
+  isAdmin           Boolean       @default(false)
+  initiatedRequests SwapRequest[] @relation("swapRequester")
+  receivedRequests  SwapRequest[] @relation("swapProposer")
+  sentMessages      Message[]     @relation("messageSender")
+  receivedMessages  Message[]     @relation("messageReceiver")
+  location          Location?     @relation(fields: [locationId], references: [id])
+  locationId        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+model Book {
+  id           String        @id @default(cuid())
+  title        String
+  author       String
+  description  String?
+  coverImage   String?
+  condition    BookCondition @default(USED)
+  owner        User          @relation(fields: [ownerId], references: [id])
+  ownerId      String
+  genres       BookGenre[]
+  swapRequests SwapRequest[] @relation("requestedBook")
+  proposedIn   SwapRequest[] @relation("proposedBook")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SwapRequest {
+  id              String     @id @default(cuid())
+  requester       User       @relation("swapRequester", fields: [requesterId], references: [id])
+  requesterId     String
+  proposer        User       @relation("swapProposer", fields: [proposerId], references: [id])
+  proposerId      String
+  requestedBook   Book       @relation("requestedBook", fields: [requestedBookId], references: [id])
+  requestedBookId String
+  proposedBook    Book?      @relation("proposedBook", fields: [proposedBookId], references: [id])
+  proposedBookId  String?
+  status          SwapStatus @default(PENDING)
+  messages        Message[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  content       String
+  sender        User        @relation("messageSender", fields: [senderId], references: [id])
+  senderId      String
+  receiver      User        @relation("messageReceiver", fields: [receiverId], references: [id])
+  receiverId    String
+  swapRequest   SwapRequest @relation(fields: [swapRequestId], references: [id])
+  swapRequestId String
+  createdAt     DateTime    @default(now())
+}
+
+model Genre {
+  id    String      @id @default(cuid())
+  name  String      @unique
+  books BookGenre[]
+}
+
+model BookGenre {
+  bookId  String
+  genreId String
+
+  book  Book  @relation(fields: [bookId], references: [id])
+  genre Genre @relation(fields: [genreId], references: [id])
+
+  @@id([bookId, genreId])
+}
+
+model Location {
+  id      String  @id @default(cuid())
+  city    String
+  state   String?
+  country String
+  users   User[]
+}
