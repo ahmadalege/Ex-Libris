@@ -19,6 +19,7 @@ import {
   X,
   Feather,
   ChevronDown,
+  BookText,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -79,7 +80,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
       { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
       { href: "/admin/users", label: "Manage Users", icon: Users },
       { href: "/admin/books", label: "Manage Books", icon: Plus },
-      { href: "/admin/settings", label: "Site Settings", icon: Shield },
+      { href: "/admin/genres", label: "Manage Genres", icon: BookText },
     ];
 
     return user?.isAdmin ? [...adminItems] : baseItems;

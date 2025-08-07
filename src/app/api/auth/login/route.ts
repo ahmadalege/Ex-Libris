@@ -50,22 +50,15 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-
-    // const cookieStore = await cookies();
-    // const session = await getIronSession<SessionData>(
-    //   cookieStore,
-    //   sessionOptions
-    // );
-
     session.userId = user.id;
     session.username = user.username;
     session.email = user.email;
     session.isLoggedIn = true;
     session.isAdmin = user.isAdmin ?? false;
-
     await session.save();
 
     return res;
+    return NextResponse.redirect("/");
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
