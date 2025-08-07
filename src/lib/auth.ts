@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { sessionOptions, SessionData, defaultSession } from "./session";
 
 export async function getSession() {
+  const cookieStore = await cookies();
   const session = await getIronSession<SessionData>(
-    await cookies(),
+    cookieStore,
     sessionOptions
   );
 
@@ -17,7 +18,6 @@ export async function getSession() {
 
 export async function requireAuth() {
   const session = await getSession();
-
   if (!session.isLoggedIn) {
     redirect("/login");
   }
@@ -26,9 +26,8 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const session = await requireAuth();
-
   if (!session.isAdmin) {
-    redirect("/unathorized");
+    redirect("/unauthorized");
   }
   return session;
 }

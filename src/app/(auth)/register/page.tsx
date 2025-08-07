@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -32,6 +33,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if terms are accepted
+    if (!termsAccepted) {
+      toast.error("Please accept the Terms of Service and Privacy Policy");
+      return;
+    }
+
     const parsed = registerSchema.safeParse(formData);
     if (!parsed.success) {
       const errorMessages = parsed.error.flatten().fieldErrors;
@@ -43,7 +50,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("api/auth/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -51,17 +58,17 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (res.ok) {
-        setIsLoading(false);
-        toast.success("Registration successful! You can now log in.", {});
+        toast.success("Registration successful! You can now log in.");
         setFormData({
           username: "",
           email: "",
           password: "",
           confirmPassword: "",
         });
+        setTermsAccepted(false);
         router.push("/login");
       } else {
-        toast.error(data.error || "Registration failed. Please try again.", {});
+        toast.error(data.error || "Registration failed. Please try again.");
       }
     } catch (error) {
       toast.error("Network error. Please check your connection and try again.");
@@ -70,10 +77,11 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen bg-[#fdf6e3] flex items-center justify-center p-4">
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-5 pointer-events-none">
         <div
           className="w-full h-full bg-repeat"
           style={{
@@ -107,13 +115,13 @@ export default function RegisterPage() {
 
           {/* Logo Section */}
           <div className="text-center mb-8">
-            <div>
+            <div className="flex justify-center">
               <Image
                 className="mb-2"
                 src="/logo2.png"
                 alt="Ex Libris Logo"
-                width={500}
-                height={500}
+                width={130}
+                height={130}
               />
             </div>
             <h1
@@ -137,14 +145,14 @@ export default function RegisterPage() {
           </div>
 
           {/* Registration Form */}
-          <div className="space-y-6">
-            {/* Name Fields */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username Field */}
             <div className="relative">
               <label className="block text-sm font-serif text-amber-800 mb-2">
                 Username
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-amber-600 opacity-60" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-amber-600 opacity-60" />
                 <input
                   type="text"
                   name="username"
@@ -241,6 +249,8 @@ export default function RegisterPage() {
               <input
                 type="checkbox"
                 id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="mt-1 w-4 h-4 text-amber-600 bg-[#fdf6e3] border-amber-300 rounded focus:ring-amber-400 focus:ring-2"
                 required
               />
@@ -250,14 +260,14 @@ export default function RegisterPage() {
               >
                 I agree to the{" "}
                 <a
-                  href="#"
+                  href="/terms"
                   className="text-amber-600 hover:text-amber-700 underline decoration-amber-400/50 hover:decoration-amber-600 transition-colors"
                 >
                   Terms of Service
                 </a>{" "}
                 and{" "}
                 <a
-                  href="#"
+                  href="/privacy"
                   className="text-amber-600 hover:text-amber-700 underline decoration-amber-400/50 hover:decoration-amber-600 transition-colors"
                 >
                   Privacy Policy
@@ -267,7 +277,7 @@ export default function RegisterPage() {
 
             {/* Submit Button */}
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
               className="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 disabled:from-amber-400 disabled:to-amber-500 text-white font-serif py-3 px-6 rounded-md shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
@@ -280,7 +290,7 @@ export default function RegisterPage() {
                 </>
               )}
             </button>
-          </div>
+          </form>
 
           {/* Sign In Link */}
           <div className="mt-8 text-center">

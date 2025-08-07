@@ -1,27 +1,21 @@
 import prisma from "@/lib/db";
+import { SessionData, sessionOptions } from "@/lib/session";
 import bcrypt from "bcrypt";
-import { NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
-import { SessionData, sessionOptions } from "@/lib/session";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { identifier, password } = await req.json();
-
-    if (!identifier || !password) {
+    const { email, password } = await req.json();
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "Enter missing field(s)" },
+        { error: "Email and password are required" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: identifier }, { username: identifier }],
-      },
-    });
-
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return NextResponse.json(
         { error: "Invalid credentials" },
@@ -29,37 +23,51 @@ export async function POST(req: Request) {
       );
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: "Password incorrect" },
-        { status: 401 }
-      );
-    }
-
-    const session = await getIronSession<SessionData>(
-      await cookies(),
-      sessionOptions
-    );
-    session.userId = user.id;
-    session.username = user.username;
-    session.email = user.email;
-    session.isAdmin = user.isAdmin;
-    session.isLoggedIn = true;
-    await session.save();
-
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: "Login successful",
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        isAdmin: user.isAdmin,
+        isAdmin: user.isAdmin ?? false,
+        isLoggedIn: true,
       },
     });
+
+    const session = await getIronSession<SessionData>(req, res, sessionOptions);
+    session.userId = user.id;
+    session.username = user.username;
+    session.email = user.email;
+    session.isAdmin = user.isAdmin ?? false;
+    session.isLoggedIn = true;
+    session.createdAt = new Date().toISOString();
+    await session.save();
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return NextResponse.json(
+        { error: "Incorrect password" },
+        { status: 401 }
+      );
+    }
+
+    // const cookieStore = await cookies();
+    // const session = await getIronSession<SessionData>(
+    //   cookieStore,
+    //   sessionOptions
+    // );
+
+    session.userId = user.id;
+    session.username = user.username;
+    session.email = user.email;
+    session.isLoggedIn = true;
+    session.isAdmin = user.isAdmin ?? false;
+
+    await session.save();
+
+    return res;
   } catch (error) {
-    console.error("Login error", error);
+    console.error("Login error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
